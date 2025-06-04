@@ -2,12 +2,14 @@ import React, { useRef, useEffect, useState } from 'react';
 import { Pose } from '@mediapipe/pose';
 import { Camera } from '@mediapipe/camera_utils';
 import { exportBVH } from './exportBVH';
+import SkeletonPreview from './SkeletonPreivew';
 
 export default function PoseTracker() {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const [isRecording, setIsRecording] = useState(false);
-  const [frames, setFrames] = useState([]); // store recorded frames
+  const [frames, setFrames] = useState([]);
+  const [exportMessage, setExportMessage] = useState('');
 
   useEffect(() => {
     const onResults = (results) => {
@@ -61,32 +63,64 @@ export default function PoseTracker() {
     }
   }, [isRecording]);
 
-  // Export as JSON
+  const showMessage = (msg) => {
+    setExportMessage(msg);
+    setTimeout(() => setExportMessage(''), 3000); // Clear after 3s
+  };
+
   const handleExport = () => {
-    const blob = new Blob([JSON.stringify(frames, null, 2)], { type: 'application/json' });
+    const blob = new Blob([JSON.stringify(frames, null, 2)], {
+      type: 'application/json',
+    });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = 'motion_data.json';
     a.click();
     URL.revokeObjectURL(url);
+    showMessage('✅ Exported as JSON!');
+  };
+
+  const handleBVHExport = () => {
+    exportBVH(frames);
+    showMessage('✅ Exported as BVH!');
   };
 
   return (
-    <div>
+    <div style={{ textAlign: 'center', fontFamily: 'sans-serif' }}>
       <video ref={videoRef} style={{ display: 'none' }}></video>
-      <canvas ref={canvasRef} width="640" height="480" />
-      <div style={{ marginTop: 12 }}>
+      <canvas ref={canvasRef} width="640" height="480" style={{ border: '1px solid #ccc' }} />
+      
+      {isRecording && (
+        <div style={{ color: 'red', fontWeight: 'bold', marginTop: 10 }}>
+          ● Recording...
+        </div>
+      )}
+
+      {exportMessage && (
+        <div style={{ marginTop: 8, color: 'green' }}>{exportMessage}</div>
+      )}
+
+      {frames.length > 0 && !isRecording && (
+        <SkeletonPreview frames={frames} />
+      )}
+
+      <div style={{ marginTop: 16, display: 'flex', gap: '12px', justifyContent: 'center' }}>
         {!isRecording ? (
-          <button onClick={() => { setFrames([]); setIsRecording(true); }}>Start Recording</button>
+          <button onClick={() => { setFrames([]); setIsRecording(true); }}>
+            Start Recording
+          </button>
         ) : (
-          <button onClick={() => setIsRecording(false)}>Stop Recording</button>
+          <button onClick={() => setIsRecording(false)}>
+            Stop Recording
+          </button>
         )}
-        <button onClick={handleExport} disabled={frames.length === 0}>Export JSON</button>
-        <button onClick={() => exportBVH(frames)} disabled={frames.length === 0}>
+        <button onClick={handleExport} disabled={frames.length === 0}>
+          Export JSON
+        </button>
+        <button onClick={handleBVHExport} disabled={frames.length === 0}>
           Export BVH
         </button>
-
       </div>
     </div>
   );

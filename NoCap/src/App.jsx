@@ -13,7 +13,7 @@ function App() {
         <PoseTracker />
       </div>
       <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
+        Stand in full frame for the best effect
       </p>
     </>
   )
