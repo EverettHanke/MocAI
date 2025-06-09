@@ -43,11 +43,12 @@ function App() {
             </button>
             <PoseTracker />
           </div>
+          <p className="read-the-docs">
+            Stand in full frame for the best effect
+          </p>
         </>
       )}
-      <p className="read-the-docs">
-        Stand in full frame for the best effect
-      </p>
+      
     </>
   )
 }
