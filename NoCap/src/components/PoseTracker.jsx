@@ -15,25 +15,31 @@ export default function PoseTracker() {
 
   useEffect(() => {
     const onResults = (results) => {
-      const canvasCtx = canvasRef.current.getContext('2d');
-      canvasCtx.save();
-      canvasCtx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-      canvasCtx.drawImage(results.image, 0, 0, canvasRef.current.width, canvasRef.current.height);
+      const ctx = canvasRef.current.getContext('2d');
+      const width = canvasRef.current.width;
+      const height = canvasRef.current.height;
+
+      ctx.save();
+      ctx.clearRect(0, 0, width, height);
+      ctx.drawImage(results.image, 0, 0, width, height);
 
       if (results.poseLandmarks) {
-        for (let landmark of results.poseLandmarks) {
-          const { x, y } = landmark;
-          canvasCtx.beginPath();
-          canvasCtx.arc(x * canvasRef.current.width, y * canvasRef.current.height, 5, 0, 2 * Math.PI);
-          canvasCtx.fillStyle = 'red';
-          canvasCtx.fill();
+        for (let { x, y } of results.poseLandmarks) {
+          ctx.beginPath();
+          ctx.arc(x * width, y * height, 5, 0, 2 * Math.PI);
+          ctx.fillStyle = 'red';
+          ctx.fill();
         }
       }
 
-      canvasCtx.restore();
+      ctx.restore();
 
       if (isRecording && results.poseWorldLandmarks) {
-        setFrames((prev) => [...prev, results.poseWorldLandmarks.map(p => ({ x: p.x, y: p.y, z: p.z }))]);
+        const safeFrame = Array(33).fill(null).map(() => ({ x: 0, y: 0, z: 0 }));
+        results.poseWorldLandmarks.forEach((p, i) => {
+          if (p) safeFrame[i] = { x: p.x, y: p.y, z: p.z };
+        });
+        setFrames((prev) => [...prev, safeFrame]);
       }
     };
 
@@ -55,9 +61,7 @@ export default function PoseTracker() {
 
     if (videoRef.current) {
       const camera = new Camera(videoRef.current, {
-        onFrame: async () => {
-          await pose.send({ image: videoRef.current });
-        },
+        onFrame: async () => await pose.send({ image: videoRef.current }),
         width: 640,
         height: 480,
       });
@@ -76,6 +80,7 @@ export default function PoseTracker() {
   };
 
   const handleJSONExport = () => {
+    if (!frames.length) return showMessage('⚠️ No data to export.');
     const blob = new Blob([JSON.stringify(frames, null, 2)], {
       type: 'application/json',
     });
@@ -89,29 +94,32 @@ export default function PoseTracker() {
   };
 
   const handleBVHExport = () => {
+    if (!frames.length) return showMessage('⚠️ No data to export.');
+    if (frames[0].length < 33) return showMessage('⚠️ Incomplete landmark data.');
     exportBVH(frames);
     showMessage('✅ Exported as BVH!');
   };
 
   return (
     <div style={{ textAlign: 'center', fontFamily: 'sans-serif' }}>
-      <video ref={videoRef} style={{ display: 'none' }}></video>
+      <video ref={videoRef} style={{ display: 'none' }} />
 
-      {/* Show spinner while waiting for camera */}
       {!cameraLoaded ? (
         <div style={{
-          width: 640,
-          height: 480,
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          border: '1px solid #ccc',
+          width: 640, height: 480,
+          display: 'flex', justifyContent: 'center',
+          alignItems: 'center', border: '1px solid #ccc',
           margin: 'auto'
         }}>
           <CircularProgress />
         </div>
       ) : (
-        <canvas ref={canvasRef} width="640" height="480" style={{ border: '1px solid #ccc' }} />
+        <canvas
+          ref={canvasRef}
+          width="640"
+          height="480"
+          style={{ border: '1px solid #ccc' }}
+        />
       )}
 
       {isRecording && (
@@ -121,14 +129,21 @@ export default function PoseTracker() {
       )}
 
       {exportMessage && (
-        <div style={{ marginTop: 8, color: 'green' }}>{exportMessage}</div>
+        <div style={{ marginTop: 8, color: 'green' }}>
+          {exportMessage}
+        </div>
       )}
 
       {frames.length > 0 && !isRecording && (
         <SkeletonPreview frames={frames} />
       )}
 
-      <div style={{ marginTop: 16, display: 'flex', gap: '12px', justifyContent: 'center' }}>
+      <div style={{
+        marginTop: 16,
+        display: 'flex',
+        gap: '12px',
+        justifyContent: 'center'
+      }}>
         {!isRecording ? (
           <button onClick={() => { setFrames([]); setIsRecording(true); }}>
             Start Recording
