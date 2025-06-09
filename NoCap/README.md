@@ -22,6 +22,7 @@ With NoCap, you don't need expensive suits or hardware. Just your browser, a cam
 - **Frontend:** React, Vite
 - **AI Pose Tracking:** MediaPipe
 - **Styling:** CSS
+- **MUI** for loading screen style
 - **Format Exporting:** Current support for JSON and BVH exporting
 
 ---
