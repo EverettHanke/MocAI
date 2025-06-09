@@ -1,8 +1,9 @@
-import React, { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { Pose } from '@mediapipe/pose';
 import { Camera } from '@mediapipe/camera_utils';
 import { exportBVH } from './exportBVH';
 import SkeletonPreview from './SkeletonPreivew';
+import CircularProgress from '@mui/material/CircularProgress';
 
 export default function PoseTracker() {
   const videoRef = useRef(null);
@@ -10,8 +11,7 @@ export default function PoseTracker() {
   const [isRecording, setIsRecording] = useState(false);
   const [frames, setFrames] = useState([]);
   const [exportMessage, setExportMessage] = useState('');
-
-  
+  const [cameraLoaded, setCameraLoaded] = useState(false);
 
   useEffect(() => {
     const onResults = (results) => {
@@ -61,16 +61,21 @@ export default function PoseTracker() {
         width: 640,
         height: 480,
       });
+
+      videoRef.current.onloadeddata = () => {
+        setCameraLoaded(true);
+      };
+
       camera.start();
     }
   }, [isRecording]);
 
   const showMessage = (msg) => {
     setExportMessage(msg);
-    setTimeout(() => setExportMessage(''), 3000); // Clear after 3s
+    setTimeout(() => setExportMessage(''), 6000);
   };
 
-  const handleExport = () => {
+  const handleJSONExport = () => {
     const blob = new Blob([JSON.stringify(frames, null, 2)], {
       type: 'application/json',
     });
@@ -91,8 +96,24 @@ export default function PoseTracker() {
   return (
     <div style={{ textAlign: 'center', fontFamily: 'sans-serif' }}>
       <video ref={videoRef} style={{ display: 'none' }}></video>
-      <canvas ref={canvasRef} width="640" height="480" style={{ border: '1px solid #ccc' }} />
-      
+
+      {/* Show spinner while waiting for camera */}
+      {!cameraLoaded ? (
+        <div style={{
+          width: 640,
+          height: 480,
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          border: '1px solid #ccc',
+          margin: 'auto'
+        }}>
+          <CircularProgress />
+        </div>
+      ) : (
+        <canvas ref={canvasRef} width="640" height="480" style={{ border: '1px solid #ccc' }} />
+      )}
+
       {isRecording && (
         <div style={{ color: 'red', fontWeight: 'bold', marginTop: 10 }}>
           ● Recording...
@@ -117,7 +138,7 @@ export default function PoseTracker() {
             Stop Recording
           </button>
         )}
-        <button onClick={handleExport} disabled={frames.length === 0}>
+        <button onClick={handleJSONExport} disabled={frames.length === 0}>
           Export JSON
         </button>
         <button onClick={handleBVHExport} disabled={frames.length === 0}>
