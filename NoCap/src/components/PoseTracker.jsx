@@ -13,7 +13,24 @@ export default function PoseTracker() {
   const [exportMessage, setExportMessage] = useState('');
   const [cameraLoaded, setCameraLoaded] = useState(false);
 
+  // Internal ref to store recording state + frames (isolated from React re-renders)
+  const recorderRef = useRef({ isRecording: false, frames: [] });
+
   useEffect(() => {
+    const pose = new Pose({
+      locateFile: (file) =>
+        `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`,
+    });
+
+    pose.setOptions({
+      modelComplexity: 1,
+      smoothLandmarks: true,
+      enableSegmentation: false,
+      smoothSegmentation: false,
+      minDetectionConfidence: 0.5,
+      minTrackingConfidence: 0.5,
+    });
+
     const onResults = (results) => {
       const ctx = canvasRef.current.getContext('2d');
       const width = canvasRef.current.width;
@@ -34,28 +51,16 @@ export default function PoseTracker() {
 
       ctx.restore();
 
-      if (isRecording && results.poseWorldLandmarks) {
+      if (recorderRef.current.isRecording && results.poseWorldLandmarks) {
         const safeFrame = Array(33).fill(null).map(() => ({ x: 0, y: 0, z: 0 }));
         results.poseWorldLandmarks.forEach((p, i) => {
           if (p) safeFrame[i] = { x: p.x, y: p.y, z: p.z };
         });
-        setFrames((prev) => [...prev, safeFrame]);
+
+        const frozenFrame = JSON.parse(JSON.stringify(safeFrame));
+        recorderRef.current.frames.push(frozenFrame);
       }
     };
-
-    const pose = new Pose({
-      locateFile: (file) =>
-        `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`,
-    });
-
-    pose.setOptions({
-      modelComplexity: 1,
-      smoothLandmarks: true,
-      enableSegmentation: false,
-      smoothSegmentation: false,
-      minDetectionConfidence: 0.5,
-      minTrackingConfidence: 0.5,
-    });
 
     pose.onResults(onResults);
 
@@ -72,7 +77,7 @@ export default function PoseTracker() {
 
       camera.start();
     }
-  }, [isRecording]);
+  }, []); // Run only once
 
   const showMessage = (msg) => {
     setExportMessage(msg);
@@ -98,6 +103,19 @@ export default function PoseTracker() {
     if (frames[0].length < 33) return showMessage('⚠️ Incomplete landmark data.');
     exportBVH(frames);
     showMessage('✅ Exported as BVH!');
+  };
+
+  const startRecording = () => {
+    recorderRef.current.frames = [];
+    recorderRef.current.isRecording = true;
+    setFrames([]); // reset local state
+    setIsRecording(true);
+  };
+
+  const stopRecording = () => {
+    recorderRef.current.isRecording = false;
+    setFrames([...recorderRef.current.frames]); // freeze recorded copy
+    setIsRecording(false);
   };
 
   return (
@@ -135,7 +153,7 @@ export default function PoseTracker() {
       )}
 
       {frames.length > 0 && !isRecording && (
-        <SkeletonPreview frames={frames} isRecording={isRecording} />
+        <SkeletonPreview frames={frames} isRecording={false} />
       )}
 
       <div style={{
@@ -145,11 +163,11 @@ export default function PoseTracker() {
         justifyContent: 'center'
       }}>
         {!isRecording ? (
-          <button onClick={() => { setFrames([]); setIsRecording(true); }}>
+          <button onClick={startRecording}>
             Start Recording
           </button>
         ) : (
-          <button onClick={() => setIsRecording(false)}>
+          <button onClick={stopRecording}>
             Stop Recording
           </button>
         )}
