@@ -1,13 +1,13 @@
 import { useRef, useEffect } from 'react';
 
 const bones = [
-  [11, 13], [13, 15],
-  [12, 14], [14, 16],
-  [11, 12],
-  [23, 24],
-  [11, 23], [12, 24],
-  [23, 25], [25, 27],
-  [24, 26], [26, 28],
+  [11, 13], [13, 15],       // Left arm
+  [12, 14], [14, 16],       // Right arm
+  [11, 12],                 // Shoulders
+  [23, 24],                 // Hips
+  [11, 23], [12, 24],       // Torso
+  [23, 25], [25, 27],       // Left leg
+  [24, 26], [26, 28],       // Right leg
 ];
 
 export default function SkeletonPreview({ frames, width = 300, height = 300, speed = 60 }) {
@@ -18,16 +18,10 @@ export default function SkeletonPreview({ frames, width = 300, height = 300, spe
   useEffect(() => {
     if (!frames.length) return;
 
-    frameIndexRef.current = 0;
     const ctx = canvasRef.current.getContext('2d');
+    frameIndexRef.current = 0; // Reset to beginning of loop
 
     const drawFrame = () => {
-      if (frameIndexRef.current >= frames.length) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-        return;
-      }
-
       const landmarks = frames[frameIndexRef.current];
       ctx.clearRect(0, 0, width, height);
 
@@ -37,6 +31,7 @@ export default function SkeletonPreview({ frames, width = 300, height = 300, spe
 
       ctx.strokeStyle = '#00ffcc';
       ctx.lineWidth = 2;
+
       for (const [start, end] of bones) {
         const a = landmarks[start];
         const b = landmarks[end];
@@ -48,9 +43,10 @@ export default function SkeletonPreview({ frames, width = 300, height = 300, spe
         }
       }
 
-      frameIndexRef.current += 1;
+      frameIndexRef.current = (frameIndexRef.current + 1) % frames.length;
     };
 
+    clearInterval(intervalRef.current);
     intervalRef.current = setInterval(drawFrame, 1000 / speed);
 
     return () => clearInterval(intervalRef.current);
@@ -59,7 +55,12 @@ export default function SkeletonPreview({ frames, width = 300, height = 300, spe
   return (
     <div style={{ marginTop: 20 }}>
       <h3>Skeleton Preview</h3>
-      <canvas ref={canvasRef} width={width} height={height} style={{ border: '1px solid #ddd' }} />
+      <canvas
+        ref={canvasRef}
+        width={width}
+        height={height}
+        style={{ border: '1px solid #ddd', backgroundColor: '#111' }}
+      />
     </div>
   );
 }
