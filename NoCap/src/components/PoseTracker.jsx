@@ -135,7 +135,7 @@ export default function PoseTracker() {
       )}
 
       {frames.length > 0 && !isRecording && (
-        <SkeletonPreview frames={frames} />
+        <SkeletonPreview frames={frames} isRecording={isRecording} />
       )}
 
       <div style={{
