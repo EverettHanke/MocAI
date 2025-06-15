@@ -1,58 +1,85 @@
-// exportBVH.js
-// Converts MediaPipe poseWorldLandmarks to UE5 Mannequin-approximate BVH format
+// exportBVH_threejs.js
+// Converts MediaPipe poseWorldLandmarks to BVH with proper joint orientation
+// Requires Three.js (for quaternion and Euler math)
 
-function computeRotation(from, to) {
-  const dx = to.x - from.x;
-  const dy = to.y - from.y;
-  const dz = to.z - from.z;
-  const length = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
+import * as THREE from 'three';
 
-  const x = dx / length;
-  const y = dy / length;
-  const z = dz / length;
+// Map each joint to its parent for computing local rotations
+const jointHierarchy = {
+  pelvis: null,
+  spine_01: 'pelvis',
+  spine_02: 'spine_01',
+  spine_03: 'spine_02',
+  neck_01: 'spine_03',
+  head: 'neck_01',
 
-  // Approximate X-Y-Z rotation order
-  const Xrot = Math.atan2(y, z) * (180 / Math.PI);
-  const Yrot = Math.atan2(z, x) * (180 / Math.PI);
-  const Zrot = Math.atan2(x, y) * (180 / Math.PI);
+  clavicle_l: 'spine_03',
+  upperarm_l: 'clavicle_l',
+  lowerarm_l: 'upperarm_l',
+  hand_l: 'lowerarm_l',
 
-  return [Xrot, Yrot, Zrot];
+  clavicle_r: 'spine_03',
+  upperarm_r: 'clavicle_r',
+  lowerarm_r: 'upperarm_r',
+  hand_r: 'lowerarm_r',
+
+  thigh_l: 'pelvis',
+  calf_l: 'thigh_l',
+  foot_l: 'calf_l',
+  ball_l: 'foot_l',
+
+  thigh_r: 'pelvis',
+  calf_r: 'thigh_r',
+  foot_r: 'calf_r',
+  ball_r: 'foot_r',
+};
+
+const jointIndices = {
+  pelvis: [23, 24],
+  spine_01: [23, 11],
+  spine_02: [11, 0],
+  spine_03: [0, 0],
+  neck_01: [0, 1],
+  head: [1, 3],
+
+  clavicle_l: [11, 13],
+  upperarm_l: [13, 15],
+  lowerarm_l: [15, 17],
+  hand_l: [17, 19],
+
+  clavicle_r: [12, 14],
+  upperarm_r: [14, 16],
+  lowerarm_r: [16, 18],
+  hand_r: [18, 20],
+
+  thigh_l: [23, 25],
+  calf_l: [25, 27],
+  foot_l: [27, 31],
+  ball_l: [31, 32],
+
+  thigh_r: [24, 26],
+  calf_r: [26, 28],
+  foot_r: [28, 30],
+  ball_r: [30, 32],
+};
+
+function computeEuler(from, to, order = 'XYZ') {
+  const dir = new THREE.Vector3(to.x - from.x, to.y - from.y, to.z - from.z).normalize();
+  const up = new THREE.Vector3(0, 1, 0);
+  const quat = new THREE.Quaternion().setFromUnitVectors(up, dir);
+  const euler = new THREE.Euler().setFromQuaternion(quat, order);
+  return [euler.x, euler.y, euler.z].map(THREE.MathUtils.radToDeg);
+}
+
+function toLine(arr, digits = 6) {
+  return arr.map(x => x.toFixed(digits)).join(' ');
 }
 
 export function exportBVH(frames) {
-  if (!frames || frames.length === 0) return;
+  if (!frames?.length) return;
 
-  const jointMap = {
-    pelvis: [23, 24],
-    spine_01: [23, 11],
-    spine_02: [11, 0],
-    spine_03: [0, 0],
-    clavicle_l: [11, 13],
-    upperarm_l: [13, 15],
-    lowerarm_l: [15, 17],
-    hand_l: [17, 19],
-    clavicle_r: [12, 14],
-    upperarm_r: [14, 16],
-    lowerarm_r: [16, 18],
-    hand_r: [18, 20],
-    neck_01: [0, 1],
-    head: [1, 3],
-    thigh_l: [23, 25],
-    calf_l: [25, 27],
-    foot_l: [27, 31],
-    ball_l: [31, 32],
-    thigh_r: [24, 26],
-    calf_r: [26, 28],
-    foot_r: [28, 30],
-    ball_r: [30, 32]
-  };
-
-  function toLine(arr, digits = 6) {
-    return arr.map(x => x.toFixed(digits)).join(' ');
-  }
-
-  const header = `
-HIERARCHY
+  const jointNames = Object.keys(jointHierarchy);
+const header = `HIERARCHY
 ROOT pelvis
 {
   OFFSET 0.000000 0.000000 0.000000
@@ -203,40 +230,37 @@ ROOT pelvis
       }
     }
   }
-}
-`;
-
+}`;
   let motion = `MOTION\nFrames: ${frames.length}\nFrame Time: 0.0333333\n`;
 
   for (const frame of frames) {
-    const hips = frame[23] && frame[24]
-      ? {
-          x: (frame[23].x + frame[24].x) / 2 * 100,
-          y: (frame[23].y + frame[24].y) / 2 * 100,
-          z: (frame[23].z + frame[24].z) / 2 * 100
-        }
-      : { x: 0, y: 0, z: 0 };
+    const flatPose = [];
 
-    const flatPose = [hips.x, hips.y, hips.z];
+    // Hip center (23 + 24) / 2
+    const hips = {
+      x: (frame[23].x + frame[24].x) / 2 * 100,
+      y: (frame[23].y + frame[24].y) / 2 * 100,
+      z: (frame[23].z + frame[24].z) / 2 * 100
+    };
+    flatPose.push(hips.x, hips.y, hips.z);
 
-    for (const jointName of Object.keys(jointMap)) {
-      const [fromIdx, toIdx] = jointMap[jointName];
+    for (const joint of jointNames) {
+      const [fromIdx, toIdx] = jointIndices[joint];
       const from = frame[fromIdx] || { x: 0, y: 0, z: 0 };
       const to = frame[toIdx] || { x: 0, y: 0, z: 0 };
 
-      const rotation = computeRotation(from, to); // X, Y, Z order
+      const rotation = computeEuler(from, to); // XYZ
       flatPose.push(...rotation);
     }
 
     motion += toLine(flatPose) + '\n';
   }
 
-  const fullBVH = header + motion;
+  const fullBVH = header + '\n' + motion;
   const blob = new Blob([fullBVH], { type: 'text/plain' });
-  const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url;
-  a.download = 'manny_fixed_xyz.bvh';
+  a.href = URL.createObjectURL(blob);
+  a.download = 'corrected_manny.bvh';
   a.click();
-  URL.revokeObjectURL(url);
+  URL.revokeObjectURL(a.href);
 }
