@@ -11,14 +11,12 @@ function computeRotation(from, to) {
   const y = dy / length;
   const z = dz / length;
 
-  // ZXY rotation approximation (not perfect but decent for directional limbs)
-  const Zrot = Math.atan2(x, y) * (180 / Math.PI);
-  const Xrot = -Math.asin(z) * (180 / Math.PI);
+  // Approximate X-Y-Z rotation order
+  const Xrot = Math.atan2(y, z) * (180 / Math.PI);
   const Yrot = Math.atan2(z, x) * (180 / Math.PI);
+  const Zrot = Math.atan2(x, y) * (180 / Math.PI);
 
-
-
-  return [Zrot, Xrot, Yrot];
+  return [Xrot, Yrot, Zrot];
 }
 
 export function exportBVH(frames) {
@@ -58,32 +56,32 @@ HIERARCHY
 ROOT pelvis
 {
   OFFSET 0.000000 0.000000 0.000000
-  CHANNELS 6 Xposition Yposition Zposition Zrotation Xrotation Yrotation
+  CHANNELS 6 Xposition Yposition Zposition Xrotation Yrotation Zrotation
 
   JOINT spine_01
   {
     OFFSET 0.000000 10.000000 0.000000
-    CHANNELS 3 Zrotation Xrotation Yrotation
+    CHANNELS 3 Xrotation Yrotation Zrotation
 
     JOINT spine_02
     {
       OFFSET 0.000000 10.000000 0.000000
-      CHANNELS 3 Zrotation Xrotation Yrotation
+      CHANNELS 3 Xrotation Yrotation Zrotation
 
       JOINT spine_03
       {
         OFFSET 0.000000 10.000000 0.000000
-        CHANNELS 3 Zrotation Xrotation Yrotation
+        CHANNELS 3 Xrotation Yrotation Zrotation
 
         JOINT neck_01
         {
           OFFSET 0.000000 10.000000 0.000000
-          CHANNELS 3 Zrotation Xrotation Yrotation
+          CHANNELS 3 Xrotation Yrotation Zrotation
 
           JOINT head
           {
             OFFSET 0.000000 10.000000 0.000000
-            CHANNELS 3 Zrotation Xrotation Yrotation
+            CHANNELS 3 Xrotation Yrotation Zrotation
             End Site
             {
               OFFSET 0.000000 5.000000 0.000000
@@ -97,22 +95,22 @@ ROOT pelvis
   JOINT clavicle_l
   {
     OFFSET 5.000000 9.000000 0.000000
-    CHANNELS 3 Zrotation Xrotation Yrotation
+    CHANNELS 3 Xrotation Yrotation Zrotation
 
     JOINT upperarm_l
     {
       OFFSET 10.000000 0.000000 0.000000
-      CHANNELS 3 Zrotation Xrotation Yrotation
+      CHANNELS 3 Xrotation Yrotation Zrotation
 
       JOINT lowerarm_l
       {
         OFFSET 15.000000 0.000000 0.000000
-        CHANNELS 3 Zrotation Xrotation Yrotation
+        CHANNELS 3 Xrotation Yrotation Zrotation
 
         JOINT hand_l
         {
           OFFSET 15.000000 0.000000 0.000000
-          CHANNELS 3 Zrotation Xrotation Yrotation
+          CHANNELS 3 Xrotation Yrotation Zrotation
           End Site
           {
             OFFSET 5.000000 0.000000 0.000000
@@ -125,22 +123,22 @@ ROOT pelvis
   JOINT clavicle_r
   {
     OFFSET -5.000000 9.000000 0.000000
-    CHANNELS 3 Zrotation Xrotation Yrotation
+    CHANNELS 3 Xrotation Yrotation Zrotation
 
     JOINT upperarm_r
     {
       OFFSET -10.000000 0.000000 0.000000
-      CHANNELS 3 Zrotation Xrotation Yrotation
+      CHANNELS 3 Xrotation Yrotation Zrotation
 
       JOINT lowerarm_r
       {
         OFFSET -15.000000 0.000000 0.000000
-        CHANNELS 3 Zrotation Xrotation Yrotation
+        CHANNELS 3 Xrotation Yrotation Zrotation
 
         JOINT hand_r
         {
           OFFSET -15.000000 0.000000 0.000000
-          CHANNELS 3 Zrotation Xrotation Yrotation
+          CHANNELS 3 Xrotation Yrotation Zrotation
           End Site
           {
             OFFSET -5.000000 0.000000 0.000000
@@ -153,22 +151,22 @@ ROOT pelvis
   JOINT thigh_l
   {
     OFFSET 5.000000 -10.000000 0.000000
-    CHANNELS 3 Zrotation Xrotation Yrotation
+    CHANNELS 3 Xrotation Yrotation Zrotation
 
     JOINT calf_l
     {
       OFFSET 0.000000 -30.000000 0.000000
-      CHANNELS 3 Zrotation Xrotation Yrotation
+      CHANNELS 3 Xrotation Yrotation Zrotation
 
       JOINT foot_l
       {
         OFFSET 0.000000 -20.000000 5.000000
-        CHANNELS 3 Zrotation Xrotation Yrotation
+        CHANNELS 3 Xrotation Yrotation Zrotation
 
         JOINT ball_l
         {
           OFFSET 5.000000 0.000000 0.000000
-          CHANNELS 3 Zrotation Xrotation Yrotation
+          CHANNELS 3 Xrotation Yrotation Zrotation
           End Site
           {
             OFFSET 5.000000 0.000000 0.000000
@@ -181,22 +179,22 @@ ROOT pelvis
   JOINT thigh_r
   {
     OFFSET -5.000000 -10.000000 0.000000
-    CHANNELS 3 Zrotation Xrotation Yrotation
+    CHANNELS 3 Xrotation Yrotation Zrotation
 
     JOINT calf_r
     {
       OFFSET 0.000000 -30.000000 0.000000
-      CHANNELS 3 Zrotation Xrotation Yrotation
+      CHANNELS 3 Xrotation Yrotation Zrotation
 
       JOINT foot_r
       {
         OFFSET 0.000000 -20.000000 5.000000
-        CHANNELS 3 Zrotation Xrotation Yrotation
+        CHANNELS 3 Xrotation Yrotation Zrotation
 
         JOINT ball_r
         {
           OFFSET -5.000000 0.000000 0.000000
-          CHANNELS 3 Zrotation Xrotation Yrotation
+          CHANNELS 3 Xrotation Yrotation Zrotation
           End Site
           {
             OFFSET -5.000000 0.000000 0.000000
@@ -219,14 +217,14 @@ ROOT pelvis
         }
       : { x: 0, y: 0, z: 0 };
 
-    const flatPose = [hips.x, hips.y, hips.z, 0, 0, 0];
+    const flatPose = [hips.x, hips.y, hips.z];
 
     for (const jointName of Object.keys(jointMap)) {
       const [fromIdx, toIdx] = jointMap[jointName];
       const from = frame[fromIdx] || { x: 0, y: 0, z: 0 };
       const to = frame[toIdx] || { x: 0, y: 0, z: 0 };
 
-      const rotation = computeRotation(from, to); // ZXY order
+      const rotation = computeRotation(from, to); // X, Y, Z order
       flatPose.push(...rotation);
     }
 
@@ -238,7 +236,7 @@ ROOT pelvis
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'manny_approx.bvh';
+  a.download = 'manny_fixed_xyz.bvh';
   a.click();
   URL.revokeObjectURL(url);
 }
