@@ -35,32 +35,41 @@ const jointHierarchy = {
 };
 
 const jointIndices = {
+  // Root pelvis (average of left & right hips)
   pelvis: [23, 24],
-  spine_01: [23, 11],
-  spine_02: [11, 0],
-  spine_03: [0, 0],
-  neck_01: [0, 1],
-  head: [1, 3],
 
-  clavicle_l: [11, 13],
-  upperarm_l: [13, 15],
-  lowerarm_l: [15, 17],
-  hand_l: [17, 19],
+  // Spine chain upward
+  spine_01: [23, 11],       // From left hip to left shoulder — rough spine base
+  spine_02: [11, 0],        // From left shoulder to head base (nose root)
+  spine_03: [11, 12],       // Between shoulders — approximating upper spine/shoulder line
 
-  clavicle_r: [12, 14],
-  upperarm_r: [14, 16],
-  lowerarm_r: [16, 18],
-  hand_r: [18, 20],
+  // Neck and head (facing forward)
+  neck_01: [11, 0],         // From left shoulder to nose
+  head: [0, 3],             // Nose to left eye outer (forward gaze direction)
 
-  thigh_l: [23, 25],
-  calf_l: [25, 27],
-  foot_l: [27, 31],
-  ball_l: [31, 32],
+  // Left Arm
+  clavicle_l: [11, 13],     // Shoulder to elbow (approx clavicle)
+  upperarm_l: [13, 15],     // Elbow to wrist
+  lowerarm_l: [15, 19],     // Wrist to left index
+  hand_l: [19, 21],         // Index to thumb tip (simulate palm roll)
 
-  thigh_r: [24, 26],
-  calf_r: [26, 28],
-  foot_r: [28, 30],
-  ball_r: [30, 32],
+  // Right Arm
+  clavicle_r: [12, 14],     // Shoulder to elbow
+  upperarm_r: [14, 16],     // Elbow to wrist
+  lowerarm_r: [16, 20],     // Wrist to right index
+  hand_r: [20, 22],         // Index to thumb tip
+
+  // Left Leg
+  thigh_l: [23, 25],        // Hip to knee
+  calf_l: [25, 27],         // Knee to ankle
+  foot_l: [27, 31],         // Ankle to foot index (toes)
+  ball_l: [31, 29],         // Foot index to heel
+
+  // Right Leg
+  thigh_r: [24, 26],        // Hip to knee
+  calf_r: [26, 28],         // Knee to ankle
+  foot_r: [28, 32],         // Ankle to foot index (toes)
+  ball_r: [32, 30],         // Foot index to heel
 };
 
 function computeEuler(from, to, order = 'XYZ') {

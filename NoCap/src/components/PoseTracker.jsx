@@ -1,7 +1,7 @@
 import { useRef, useEffect, useState } from 'react';
 import { Pose } from '@mediapipe/pose';
 import { Camera } from '@mediapipe/camera_utils';
-import { exportBVH } from './exportBVH';
+import { exportBVH } from './exportSimpleBVH';
 import SkeletonPreview from './SkeletonPreivew';
 import CircularProgress from '@mui/material/CircularProgress';
 
