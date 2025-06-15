@@ -1,48 +1,45 @@
-// exportBVH_unreal.js
-// Exports minimal UE5-compatible BVH skeleton from pose landmarks
-
+// exportBVH_blazepose.js
+// Exports a minimal working BVH file from BlazePose landmarks
 import * as THREE from 'three';
 
+// Define simplified BlazePose skeleton
 const jointHierarchy = {
-  pelvis: null,
-  spine_01: 'pelvis',
-  spine_02: 'spine_01',
-  spine_03: 'spine_02',
+  root: null,
 
-  clavicle_l: 'spine_03',
-  upperarm_l: 'clavicle_l',
+  spine: 'root',
+  chest: 'spine',
+  head: 'chest',
+
+  upperarm_l: 'chest',
   lowerarm_l: 'upperarm_l',
   hand_l: 'lowerarm_l',
 
-  clavicle_r: 'spine_03',
-  upperarm_r: 'clavicle_r',
+  upperarm_r: 'chest',
   lowerarm_r: 'upperarm_r',
   hand_r: 'lowerarm_r',
 
-  thigh_l: 'pelvis',
+  thigh_l: 'root',
   calf_l: 'thigh_l',
   foot_l: 'calf_l',
 
-  thigh_r: 'pelvis',
+  thigh_r: 'root',
   calf_r: 'thigh_r',
   foot_r: 'calf_r'
 };
 
 const jointIndices = {
-  pelvis: [23, 24],
-  spine_01: [23, 11],
-  spine_02: [11, 0],
-  spine_03: [0, 1],
+  root: [23, 24],
+  spine: [23, 11],
+  chest: [11, 0],
+  head: [0, 1],
 
-  clavicle_l: [11, 13],
-  upperarm_l: [13, 15],
-  lowerarm_l: [15, 17],
-  hand_l: [17, 19],
+  upperarm_l: [11, 13],
+  lowerarm_l: [13, 15],
+  hand_l: [15, 19],
 
-  clavicle_r: [12, 14],
-  upperarm_r: [14, 16],
-  lowerarm_r: [16, 18],
-  hand_r: [18, 20],
+  upperarm_r: [12, 14],
+  lowerarm_r: [14, 16],
+  hand_r: [16, 20],
 
   thigh_l: [23, 25],
   calf_l: [25, 27],
@@ -69,79 +66,72 @@ export function exportBVH(frames) {
   if (!frames?.length) return;
 
   const jointNames = Object.keys(jointHierarchy);
+
   const header = `HIERARCHY
-ROOT pelvis
+ROOT root
 {
   OFFSET 0.00 0.00 0.00
   CHANNELS 6 Xposition Yposition Zposition Xrotation Yrotation Zrotation
 
-  JOINT spine_01
+  JOINT spine
   {
     OFFSET 0.00 10.00 0.00
     CHANNELS 3 Xrotation Yrotation Zrotation
 
-    JOINT spine_02
+    JOINT chest
     {
       OFFSET 0.00 10.00 0.00
       CHANNELS 3 Xrotation Yrotation Zrotation
 
-      JOINT spine_03
+      JOINT head
       {
         OFFSET 0.00 10.00 0.00
         CHANNELS 3 Xrotation Yrotation Zrotation
-
-        JOINT clavicle_l
+        End Site
         {
-          OFFSET 5.00 5.00 0.00
+          OFFSET 0.00 5.00 0.00
+        }
+      }
+
+      JOINT upperarm_l
+      {
+        OFFSET 5.00 0.00 0.00
+        CHANNELS 3 Xrotation Yrotation Zrotation
+
+        JOINT lowerarm_l
+        {
+          OFFSET 10.00 0.00 0.00
           CHANNELS 3 Xrotation Yrotation Zrotation
 
-          JOINT upperarm_l
+          JOINT hand_l
           {
             OFFSET 10.00 0.00 0.00
             CHANNELS 3 Xrotation Yrotation Zrotation
-
-            JOINT lowerarm_l
+            End Site
             {
-              OFFSET 15.00 0.00 0.00
-              CHANNELS 3 Xrotation Yrotation Zrotation
-
-              JOINT hand_l
-              {
-                OFFSET 10.00 0.00 0.00
-                CHANNELS 3 Xrotation Yrotation Zrotation
-                End Site
-                {
-                  OFFSET 5.00 0.00 0.00
-                }
-              }
+              OFFSET 5.00 0.00 0.00
             }
           }
         }
+      }
 
-        JOINT clavicle_r
+      JOINT upperarm_r
+      {
+        OFFSET -5.00 0.00 0.00
+        CHANNELS 3 Xrotation Yrotation Zrotation
+
+        JOINT lowerarm_r
         {
-          OFFSET -5.00 5.00 0.00
+          OFFSET -10.00 0.00 0.00
           CHANNELS 3 Xrotation Yrotation Zrotation
 
-          JOINT upperarm_r
+          JOINT hand_r
           {
             OFFSET -10.00 0.00 0.00
             CHANNELS 3 Xrotation Yrotation Zrotation
-
-            JOINT lowerarm_r
+            End Site
             {
-              OFFSET -15.00 0.00 0.00
-              CHANNELS 3 Xrotation Yrotation Zrotation
-
-              JOINT hand_r
-              {
-                OFFSET -10.00 0.00 0.00
-                CHANNELS 3 Xrotation Yrotation Zrotation
-                End Site
-                {
-                  OFFSET -5.00 0.00 0.00
-                }
-              }
+              OFFSET -5.00 0.00 0.00
             }
           }
         }
@@ -198,19 +188,22 @@ ROOT pelvis
 
   for (const frame of frames) {
     const flatPose = [];
+
+    // Root position (hip center average)
     const hips = {
-      x: (frame[23].x + frame[24].x) / 2 * 100,
-      y: (frame[23].y + frame[24].y) / 2 * 100,
-      z: (frame[23].z + frame[24].z) / 2 * 100
+      x: ((frame[23]?.x || 0) + (frame[24]?.x || 0)) / 2 * 100,
+      y: ((frame[23]?.y || 0) + (frame[24]?.y || 0)) / 2 * 100,
+      z: ((frame[23]?.z || 0) + (frame[24]?.z || 0)) / 2 * 100
     };
     flatPose.push(hips.x, hips.y, hips.z);
 
+    // Root rotation and all others
     for (const joint of jointNames) {
-      const [fromIdx, toIdx] = jointIndices[joint];
-      const from = frame[fromIdx] || { x: 0, y: 0, z: 0 };
-      const to = frame[toIdx] || { x: 0, y: 0, z: 0 };
-      const rotation = computeEuler(from, to);
-      flatPose.push(...rotation);
+      const pair = jointIndices[joint];
+      const from = frame[pair?.[0]] || { x: 0, y: 0, z: 0 };
+      const to = frame[pair?.[1]] || { x: 0, y: 1, z: 0 };
+      const rot = computeEuler(from, to);
+      flatPose.push(...rot);
     }
 
     motion += toLine(flatPose) + '\n';
@@ -220,7 +213,7 @@ ROOT pelvis
   const blob = new Blob([fullBVH], { type: 'text/plain' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'manny_simplified.bvh';
+  a.download = 'blazepose_simple.bvh';
   a.click();
   URL.revokeObjectURL(a.href);
 }
